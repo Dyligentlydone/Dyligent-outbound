@@ -7,8 +7,21 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware
-app.use(cors({ origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173' }));
+// Middleware — allow same-origin (production) and local dev client
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3001',
+  process.env.CLIENT_ORIGIN,
+  process.env.BASE_URL,
+].filter(Boolean);
+
+app.use(cors({
+  origin: (origin, cb) => {
+    // Allow requests with no origin (Twilio webhooks, curl, same-origin)
+    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    cb(null, true); // permissive for now — tighten after confirming working
+  },
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false })); // Twilio webhooks send urlencoded
 

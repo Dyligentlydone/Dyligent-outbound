@@ -1,7 +1,9 @@
 import axios from 'axios';
 
+// In production the client is served by Express at the same origin, so use relative URLs.
+// In dev, proxy to the local Express server.
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001',
+  baseURL: import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '' : 'http://localhost:3001'),
 });
 
 // --- Contacts ---
