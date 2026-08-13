@@ -1,0 +1,141 @@
+import { useState, useEffect, useCallback } from 'react';
+import Dialer from './components/Dialer';
+import IncomingCall from './components/IncomingCall';
+import CallHistory from './components/CallHistory';
+import Contacts from './components/Contacts';
+import { useTwilioDevice } from './hooks/useTwilioDevice';
+import { getContacts, getCalls } from './lib/api';
+import './App.css';
+
+const TABS = ['Dialer', 'Contacts', 'History'];
+
+export default function App() {
+  const [tab, setTab] = useState('Dialer');
+  const [contacts, setContacts] = useState([]);
+  const [calls, setCalls] = useState([]);
+  const [dialTarget, setDialTarget] = useState('');
+
+  const {
+    deviceState,
+    activeCall,
+    incomingCall,
+    callStatus,
+    error,
+    makeCall,
+    hangUp,
+    muteCall,
+    sendDigit,
+    acceptIncoming,
+    rejectIncoming,
+    reconnect,
+  } = useTwilioDevice();
+
+  const loadContacts = useCallback(() => getContacts().then(setContacts), []);
+  const loadCalls = useCallback(() => getCalls().then(setCalls), []);
+
+  useEffect(() => {
+    loadContacts();
+    loadCalls();
+  }, [loadContacts, loadCalls]);
+
+  // Refresh calls when a call ends
+  useEffect(() => {
+    if (callStatus === 'completed' || callStatus === 'failed') {
+      setTimeout(loadCalls, 1500);
+    }
+  }, [callStatus, loadCalls]);
+
+  const handleCall = async (number) => {
+    setDialTarget(number);
+    try {
+      await makeCall(number);
+      setTab('Dialer');
+    } catch (e) {
+      alert(`Failed to start call: ${e.message}`);
+    }
+  };
+
+  const handleCallFromContacts = (phone) => {
+    setDialTarget(phone);
+    setTab('Dialer');
+    setTimeout(() => handleCall(phone), 100);
+  };
+
+  const handleCallFromHistory = (phone) => {
+    setDialTarget(phone);
+    setTab('Dialer');
+    setTimeout(() => handleCall(phone), 100);
+  };
+
+  return (
+    <div className="app">
+      <header className="app-header">
+        <div className="logo">
+          <span className="logo-icon">📡</span>
+          <span className="logo-text">Dyligent <strong>Outbound</strong></span>
+        </div>
+        {error && (
+          <div className="error-banner">
+            ⚠️ {error}
+            <button onClick={reconnect}>Reconnect</button>
+          </div>
+        )}
+      </header>
+
+      <div className="app-body">
+        {/* Left: Dialer always visible */}
+        <aside className="dialer-sidebar">
+          <Dialer
+            onCall={handleCall}
+            onDigit={sendDigit}
+            onHangUp={hangUp}
+            onMute={muteCall}
+            activeCall={activeCall}
+            callStatus={callStatus}
+            deviceState={deviceState}
+            initialNumber={dialTarget}
+          />
+        </aside>
+
+        {/* Right: tabbed panel */}
+        <main className="main-panel">
+          <div className="tabs">
+            {TABS.filter((t) => t !== 'Dialer').map((t) => (
+              <button
+                key={t}
+                className={`tab-btn ${tab === t ? 'active' : ''}`}
+                onClick={() => setTab(t)}
+              >
+                {t === 'Contacts' ? `Contacts (${contacts.length})` : t}
+              </button>
+            ))}
+          </div>
+          <div className="tab-content">
+            {tab === 'Contacts' && (
+              <Contacts
+                contacts={contacts}
+                onRefresh={loadContacts}
+                onCallNumber={handleCallFromContacts}
+              />
+            )}
+            {tab === 'History' && (
+              <CallHistory
+                calls={calls}
+                onRefresh={loadCalls}
+                onCallNumber={handleCallFromHistory}
+              />
+            )}
+          </div>
+        </main>
+      </div>
+
+      {/* Incoming call overlay */}
+      <IncomingCall
+        call={incomingCall}
+        contacts={contacts}
+        onAccept={acceptIncoming}
+        onReject={rejectIncoming}
+      />
+    </div>
+  );
+}
