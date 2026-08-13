@@ -3,18 +3,24 @@ const router = express.Router();
 const twilio = require('twilio');
 const db = require('../db/schema');
 
-const {
-  TWILIO_ACCOUNT_SID,
-  TWILIO_AUTH_TOKEN,
-  TWILIO_API_KEY,
-  TWILIO_API_SECRET,
-  TWILIO_TWIML_APP_SID,
-  TWILIO_PHONE_NUMBER,
-} = process.env;
+// Read env vars at request time so they're always current (avoids module-load-time capture issues)
+function env() {
+  return {
+    TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID,
+    TWILIO_API_KEY: process.env.TWILIO_API_KEY,
+    TWILIO_API_SECRET: process.env.TWILIO_API_SECRET,
+    TWILIO_TWIML_APP_SID: process.env.TWILIO_TWIML_APP_SID,
+    TWILIO_PHONE_NUMBER: process.env.TWILIO_PHONE_NUMBER,
+    BASE_URL: process.env.BASE_URL,
+  };
+}
 
 // GET /voice/token — issues a Twilio Access Token for the browser Voice SDK
 router.get('/token', (req, res) => {
+  const { TWILIO_ACCOUNT_SID, TWILIO_API_KEY, TWILIO_API_SECRET, TWILIO_TWIML_APP_SID } = env();
+
   if (!TWILIO_API_KEY || !TWILIO_API_SECRET || !TWILIO_ACCOUNT_SID || !TWILIO_TWIML_APP_SID) {
+    console.error('Missing Twilio env vars:', { TWILIO_ACCOUNT_SID: !!TWILIO_ACCOUNT_SID, TWILIO_API_KEY: !!TWILIO_API_KEY, TWILIO_API_SECRET: !!TWILIO_API_SECRET, TWILIO_TWIML_APP_SID: !!TWILIO_TWIML_APP_SID });
     return res.status(500).json({ error: 'Twilio env vars not configured' });
   }
 
@@ -38,6 +44,7 @@ router.get('/token', (req, res) => {
 // POST /voice/outbound — TwiML webhook: Twilio calls this when the browser initiates an outbound call
 router.post('/outbound', (req, res) => {
   const { To, From, CallSid } = req.body;
+  const { TWILIO_PHONE_NUMBER, BASE_URL } = env();
   const VoiceResponse = twilio.twiml.VoiceResponse;
   const twiml = new VoiceResponse();
 
@@ -57,11 +64,11 @@ router.post('/outbound', (req, res) => {
 
   const dial = twiml.dial({
     callerId: TWILIO_PHONE_NUMBER,
-    action: `${process.env.BASE_URL}/voice/status`,
+    action: `${BASE_URL}/voice/status`,
     method: 'POST',
   });
   dial.number({
-    statusCallback: `${process.env.BASE_URL}/api/calls/status`,
+    statusCallback: `${BASE_URL}/api/calls/status`,
     statusCallbackMethod: 'POST',
     statusCallbackEvent: 'initiated ringing answered completed',
   }, To);
@@ -72,6 +79,7 @@ router.post('/outbound', (req, res) => {
 // POST /voice/inbound — TwiML webhook: Twilio calls this for incoming calls to your number
 router.post('/inbound', (req, res) => {
   const { From, To, CallSid } = req.body;
+  const { TWILIO_PHONE_NUMBER, BASE_URL } = env();
   const VoiceResponse = twilio.twiml.VoiceResponse;
   const twiml = new VoiceResponse();
 
@@ -86,11 +94,11 @@ router.post('/inbound', (req, res) => {
 
   // Forward to browser client
   const dial = twiml.dial({
-    action: `${process.env.BASE_URL}/voice/status`,
+    action: `${BASE_URL}/voice/status`,
     method: 'POST',
   });
   dial.client({
-    statusCallback: `${process.env.BASE_URL}/api/calls/status`,
+    statusCallback: `${BASE_URL}/api/calls/status`,
     statusCallbackMethod: 'POST',
     statusCallbackEvent: 'initiated ringing answered completed',
   }, 'dyligent-agent');
