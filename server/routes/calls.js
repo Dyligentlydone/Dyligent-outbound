@@ -29,19 +29,23 @@ router.get('/', (req, res) => {
 router.get('/stats', (req, res) => {
   const { period = 'today', from, to } = req.query;
 
+  // SQLite stores datetime as 'YYYY-MM-DD HH:MM:SS' (space, no T/Z).
+  // We must compare in the same format or string sorting breaks for same-day ranges.
+  const toSqlite = (d) => d.toISOString().replace('T', ' ').replace(/\.\d+Z$/, '');
+
   let fromDt, toDt;
   const now = new Date();
   if (period === 'today') {
-    fromDt = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-    toDt   = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString();
+    fromDt = toSqlite(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())));
+    toDt   = toSqlite(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1)));
   } else if (period === 'week') {
-    const day = now.getDay();
-    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-    fromDt = new Date(now.getFullYear(), now.getMonth(), diff).toISOString();
-    toDt   = new Date(now.getFullYear(), now.getMonth(), diff + 7).toISOString();
+    const day = now.getUTCDay();
+    const diff = now.getUTCDate() - day + (day === 0 ? -6 : 1);
+    fromDt = toSqlite(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), diff)));
+    toDt   = toSqlite(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), diff + 7)));
   } else {
-    fromDt = from ? new Date(from).toISOString() : new Date(0).toISOString();
-    toDt   = to   ? new Date(new Date(to).getTime() + 86400000).toISOString() : new Date().toISOString();
+    fromDt = from ? toSqlite(new Date(from)) : '2000-01-01 00:00:00';
+    toDt   = to   ? toSqlite(new Date(new Date(to).getTime() + 86400000)) : toSqlite(new Date());
   }
 
   const where = `WHERE c.started_at >= ? AND c.started_at < ?`;
