@@ -1,6 +1,24 @@
 import { useState } from 'react';
 import { patchCall } from '../lib/api';
 
+function RecordingPlayer({ callId }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <span className="recording-wrap">
+      <button className="recording-btn" title="Play recording" onClick={() => setOpen((o) => !o)}>
+        {open ? '⏹ hide' : '▶ recording'}
+      </button>
+      {open && (
+        <audio
+          className="recording-audio"
+          controls
+          src={`/api/calls/${callId}/recording`}
+        />
+      )}
+    </span>
+  );
+}
+
 export default function CallHistory({ calls, onRefresh, onCallNumber }) {
   const [editingId, setEditingId] = useState(null);
   const [noteText, setNoteText] = useState('');
@@ -46,6 +64,7 @@ export default function CallHistory({ calls, onRefresh, onCallNumber }) {
                 >
                   call back
                 </button>
+                {call.recording_url && <RecordingPlayer callId={call.id} />}
                 <span className="note-display" onClick={() => startEdit(call)}>
                   {call.notes
                     ? <span className="note-text">{call.notes}</span>

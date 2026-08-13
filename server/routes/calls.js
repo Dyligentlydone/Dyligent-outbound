@@ -77,4 +77,40 @@ router.post('/status', (req, res) => {
   res.sendStatus(200);
 });
 
+// POST recording status callback — Twilio calls this when a recording is ready
+router.post('/recording-status', (req, res) => {
+  const { CallSid, RecordingUrl, RecordingStatus } = req.body;
+  if (!CallSid || RecordingStatus !== 'completed') return res.sendStatus(200);
+
+  db.prepare(`
+    UPDATE calls SET recording_url = ? WHERE twilio_sid = ?
+  `).run(RecordingUrl + '.mp3', CallSid);
+
+  res.sendStatus(200);
+});
+
+// GET recording proxy — streams the Twilio recording through our server so
+// the browser doesn't need Twilio credentials
+router.get('/:id/recording', (req, res) => {
+  const call = db.prepare('SELECT recording_url FROM calls WHERE id = ?').get(req.params.id);
+  if (!call?.recording_url) return res.status(404).json({ error: 'No recording for this call' });
+
+  const { TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN } = process.env;
+  const auth = Buffer.from(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`).toString('base64');
+
+  const https = require('https');
+  const url = new URL(call.recording_url);
+
+  const proxyReq = https.request(
+    { hostname: url.hostname, path: url.pathname, headers: { Authorization: `Basic ${auth}` } },
+    (proxyRes) => {
+      res.setHeader('Content-Type', proxyRes.headers['content-type'] || 'audio/mpeg');
+      res.setHeader('Accept-Ranges', 'bytes');
+      proxyRes.pipe(res);
+    }
+  );
+  proxyReq.on('error', () => res.status(502).json({ error: 'Failed to fetch recording' }));
+  proxyReq.end();
+});
+
 module.exports = router;

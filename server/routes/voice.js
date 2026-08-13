@@ -66,6 +66,9 @@ router.post('/outbound', (req, res) => {
     callerId: TWILIO_PHONE_NUMBER,
     action: `${BASE_URL}/voice/status`,
     method: 'POST',
+    record: 'record-from-ringing',
+    recordingStatusCallback: `${BASE_URL}/api/calls/recording-status`,
+    recordingStatusCallbackMethod: 'POST',
   });
   dial.number({
     statusCallback: `${BASE_URL}/api/calls/status`,
@@ -92,10 +95,13 @@ router.post('/inbound', (req, res) => {
     VALUES (?, 'inbound', ?, ?, 'ringing', ?)
   `).run(CallSid, From, To || TWILIO_PHONE_NUMBER, contact ? contact.id : null);
 
-  // Forward to browser client
+  // Forward to browser client, record the call
   const dial = twiml.dial({
     action: `${BASE_URL}/voice/status`,
     method: 'POST',
+    record: 'record-from-ringing',
+    recordingStatusCallback: `${BASE_URL}/api/calls/recording-status`,
+    recordingStatusCallbackMethod: 'POST',
   });
   dial.client({
     statusCallback: `${BASE_URL}/api/calls/status`,

@@ -293,6 +293,14 @@ input:focus, textarea:focus { border-color: #4f7eff; }
 }
 .call-back-btn:hover { color: #1a3a90; }
 
+.recording-wrap { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.recording-btn {
+  font-size: 11px; color: #1a7a40; background: none;
+  padding: 0; text-decoration: underline; flex-shrink: 0; white-space: nowrap;
+}
+.recording-btn:hover { color: #0f5030; }
+.recording-audio { height: 24px; width: 180px; vertical-align: middle; }
+
 .call-status-pill {
   font-size: 10px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase;
   padding: 1px 6px; flex-shrink: 0; border-radius: 3px;
