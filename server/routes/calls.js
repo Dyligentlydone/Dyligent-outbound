@@ -25,39 +25,7 @@ router.get('/', (req, res) => {
   res.json(rows);
 });
 
-// GET single call
-router.get('/:id', (req, res) => {
-  const row = db.prepare(`
-    SELECT c.*, co.name as contact_name, co.company as contact_company
-    FROM calls c LEFT JOIN contacts co ON c.contact_id = co.id
-    WHERE c.id = ?
-  `).get(req.params.id);
-  if (!row) return res.status(404).json({ error: 'Call not found' });
-  res.json(row);
-});
-
-// PATCH update call notes / status / disposition
-router.patch('/:id', (req, res) => {
-  const { notes, status, contact_id, disposition } = req.body;
-  const existing = db.prepare('SELECT id FROM calls WHERE id = ?').get(req.params.id);
-  if (!existing) return res.status(404).json({ error: 'Call not found' });
-
-  const updates = [];
-  const params = [];
-  if (notes !== undefined)       { updates.push('notes = ?');       params.push(notes); }
-  if (status !== undefined)      { updates.push('status = ?');      params.push(status); }
-  if (contact_id !== undefined)  { updates.push('contact_id = ?'); params.push(contact_id); }
-  if (disposition !== undefined) { updates.push('disposition = ?'); params.push(disposition); }
-
-  if (updates.length === 0) return res.status(400).json({ error: 'Nothing to update' });
-
-  params.push(req.params.id);
-  db.prepare(`UPDATE calls SET ${updates.join(', ')} WHERE id = ?`).run(...params);
-  const row = db.prepare('SELECT * FROM calls WHERE id = ?').get(req.params.id);
-  res.json(row);
-});
-
-// GET /api/calls/stats?period=today|week|custom&from=YYYY-MM-DD&to=YYYY-MM-DD
+// GET /api/calls/stats — must be before /:id or Express matches 'stats' as an id
 router.get('/stats', (req, res) => {
   const { period = 'today', from, to } = req.query;
 
@@ -112,6 +80,38 @@ router.get('/stats', (req, res) => {
   `).all(...p);
 
   res.json({ totals, byDisposition, byHour, byDay, fromDt, toDt });
+});
+
+// GET single call
+router.get('/:id', (req, res) => {
+  const row = db.prepare(`
+    SELECT c.*, co.name as contact_name, co.company as contact_company
+    FROM calls c LEFT JOIN contacts co ON c.contact_id = co.id
+    WHERE c.id = ?
+  `).get(req.params.id);
+  if (!row) return res.status(404).json({ error: 'Call not found' });
+  res.json(row);
+});
+
+// PATCH update call notes / status / disposition
+router.patch('/:id', (req, res) => {
+  const { notes, status, contact_id, disposition } = req.body;
+  const existing = db.prepare('SELECT id FROM calls WHERE id = ?').get(req.params.id);
+  if (!existing) return res.status(404).json({ error: 'Call not found' });
+
+  const updates = [];
+  const params = [];
+  if (notes !== undefined)       { updates.push('notes = ?');       params.push(notes); }
+  if (status !== undefined)      { updates.push('status = ?');      params.push(status); }
+  if (contact_id !== undefined)  { updates.push('contact_id = ?'); params.push(contact_id); }
+  if (disposition !== undefined) { updates.push('disposition = ?'); params.push(disposition); }
+
+  if (updates.length === 0) return res.status(400).json({ error: 'Nothing to update' });
+
+  params.push(req.params.id);
+  db.prepare(`UPDATE calls SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+  const row = db.prepare('SELECT * FROM calls WHERE id = ?').get(req.params.id);
+  res.json(row);
 });
 
 // POST Twilio status callback — Twilio will hit this endpoint
