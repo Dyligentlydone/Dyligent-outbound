@@ -69,21 +69,8 @@ export default function App() {
 
   return (
     <div className="app">
-      <header className="app-header">
-        <div className="logo">
-          <span className="logo-icon">📡</span>
-          <span className="logo-text">Dyligent <strong>Outbound</strong></span>
-        </div>
-        {error && (
-          <div className="error-banner">
-            ⚠️ {error}
-            <button onClick={reconnect}>Reconnect</button>
-          </div>
-        )}
-      </header>
-
       <div className="app-body">
-        {/* Left: Dialer always visible */}
+        {/* Left: Dialer on the paper */}
         <aside className="dialer-sidebar">
           <Dialer
             onCall={handleCall}
@@ -97,19 +84,22 @@ export default function App() {
           />
         </aside>
 
-        {/* Right: tabbed panel */}
+        {/* Right: nav + content on the paper */}
         <main className="main-panel">
-          <div className="tabs">
-            {TABS.filter((t) => t !== 'Dialer').map((t) => (
+          <nav className="paper-nav">
+            {['Contacts', 'History'].map((t) => (
               <button
                 key={t}
-                className={`tab-btn ${tab === t ? 'active' : ''}`}
+                className={`paper-nav-btn ${tab === t ? 'active' : ''}`}
                 onClick={() => setTab(t)}
               >
                 {t === 'Contacts' ? `Contacts (${contacts.length})` : t}
               </button>
             ))}
-          </div>
+            {error && (
+              <span className="paper-error">⚠️ {error} <button onClick={reconnect}>Reconnect</button></span>
+            )}
+          </nav>
           <div className="tab-content">
             {tab === 'Contacts' && (
               <Contacts
