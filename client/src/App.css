@@ -191,6 +191,7 @@ input:focus, textarea:focus { border-color: #4f7eff; }
   display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #6b7494;
 }
 .form-notes { margin-bottom: 12px; }
+.form-error { color: #ff7070; font-size: 12px; margin-bottom: 8px; background: #3d1515; border-radius: 6px; padding: 6px 10px; }
 .form-actions { display: flex; gap: 8px; }
 .form-actions button:first-child {
   background: #4f7eff; color: #fff; border-radius: 6px; padding: 7px 18px; font-weight: 600;

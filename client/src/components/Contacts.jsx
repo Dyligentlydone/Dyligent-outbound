@@ -9,6 +9,7 @@ export default function Contacts({ contacts, onRefresh, onCallNumber }) {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
 
   const filtered = contacts.filter((c) => {
     const q = search.toLowerCase();
@@ -34,6 +35,7 @@ export default function Contacts({ contacts, onRefresh, onCallNumber }) {
   const handleSave = async () => {
     if (!form.name || !form.phone) return;
     setSaving(true);
+    setSaveError(null);
     try {
       if (editing) {
         await updateContact(editing, form);
@@ -42,6 +44,8 @@ export default function Contacts({ contacts, onRefresh, onCallNumber }) {
       }
       setShowForm(false);
       onRefresh();
+    } catch (err) {
+      setSaveError(err?.response?.data?.error || err.message || 'Failed to save contact');
     } finally {
       setSaving(false);
     }
@@ -85,6 +89,7 @@ export default function Contacts({ contacts, onRefresh, onCallNumber }) {
           <label className="form-notes">Notes
             <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} placeholder="Any notes about this contact…" />
           </label>
+          {saveError && <div className="form-error">⚠️ {saveError}</div>}
           <div className="form-actions">
             <button onClick={handleSave} disabled={saving || !form.name || !form.phone}>
               {saving ? 'Saving…' : 'Save'}
