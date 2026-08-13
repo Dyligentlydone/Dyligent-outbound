@@ -5,17 +5,20 @@ const twilio = require('twilio');
 
 // GET call history
 router.get('/', (req, res) => {
-  const { limit = 50, offset = 0, direction } = req.query;
+  const { limit = 100, offset = 0, direction, disposition } = req.query;
   let query = `
     SELECT c.*, co.name as contact_name, co.company as contact_company
     FROM calls c
     LEFT JOIN contacts co ON c.contact_id = co.id
   `;
-  const params = [];
-  if (direction) {
-    query += ' WHERE c.direction = ?';
-    params.push(direction);
+  const wheres = [], params = [];
+  if (direction)   { wheres.push('c.direction = ?');    params.push(direction); }
+  if (disposition === 'untagged') {
+    wheres.push('(c.disposition IS NULL OR c.disposition = \'\')');
+  } else if (disposition) {
+    wheres.push('c.disposition = ?'); params.push(disposition);
   }
+  if (wheres.length) query += ' WHERE ' + wheres.join(' AND ');
   query += ' ORDER BY c.started_at DESC LIMIT ? OFFSET ?';
   params.push(Number(limit), Number(offset));
   const rows = db.prepare(query).all(...params);
@@ -33,17 +36,18 @@ router.get('/:id', (req, res) => {
   res.json(row);
 });
 
-// PATCH update call notes / status
+// PATCH update call notes / status / disposition
 router.patch('/:id', (req, res) => {
-  const { notes, status, contact_id } = req.body;
+  const { notes, status, contact_id, disposition } = req.body;
   const existing = db.prepare('SELECT id FROM calls WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Call not found' });
 
   const updates = [];
   const params = [];
-  if (notes !== undefined) { updates.push('notes = ?'); params.push(notes); }
-  if (status !== undefined) { updates.push('status = ?'); params.push(status); }
-  if (contact_id !== undefined) { updates.push('contact_id = ?'); params.push(contact_id); }
+  if (notes !== undefined)       { updates.push('notes = ?');       params.push(notes); }
+  if (status !== undefined)      { updates.push('status = ?');      params.push(status); }
+  if (contact_id !== undefined)  { updates.push('contact_id = ?'); params.push(contact_id); }
+  if (disposition !== undefined) { updates.push('disposition = ?'); params.push(disposition); }
 
   if (updates.length === 0) return res.status(400).json({ error: 'Nothing to update' });
 
@@ -51,6 +55,63 @@ router.patch('/:id', (req, res) => {
   db.prepare(`UPDATE calls SET ${updates.join(', ')} WHERE id = ?`).run(...params);
   const row = db.prepare('SELECT * FROM calls WHERE id = ?').get(req.params.id);
   res.json(row);
+});
+
+// GET /api/calls/stats?period=today|week|custom&from=YYYY-MM-DD&to=YYYY-MM-DD
+router.get('/stats', (req, res) => {
+  const { period = 'today', from, to } = req.query;
+
+  let fromDt, toDt;
+  const now = new Date();
+  if (period === 'today') {
+    fromDt = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+    toDt   = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString();
+  } else if (period === 'week') {
+    const day = now.getDay();
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+    fromDt = new Date(now.getFullYear(), now.getMonth(), diff).toISOString();
+    toDt   = new Date(now.getFullYear(), now.getMonth(), diff + 7).toISOString();
+  } else {
+    fromDt = from ? new Date(from).toISOString() : new Date(0).toISOString();
+    toDt   = to   ? new Date(new Date(to).getTime() + 86400000).toISOString() : new Date().toISOString();
+  }
+
+  const where = `WHERE c.started_at >= ? AND c.started_at < ?`;
+  const p = [fromDt, toDt];
+
+  const totals = db.prepare(`
+    SELECT
+      COUNT(*)                                              AS total,
+      SUM(CASE WHEN direction='outbound' THEN 1 ELSE 0 END) AS outbound,
+      SUM(CASE WHEN direction='inbound'  THEN 1 ELSE 0 END) AS inbound,
+      SUM(CASE WHEN status='completed'   THEN 1 ELSE 0 END) AS connected,
+      SUM(CASE WHEN status IN ('busy','no-answer','failed') THEN 1 ELSE 0 END) AS missed,
+      COALESCE(SUM(duration), 0)                            AS total_duration,
+      COALESCE(AVG(CASE WHEN duration > 0 THEN duration END), 0) AS avg_duration,
+      COUNT(DISTINCT CASE WHEN direction='outbound' THEN to_number END) AS unique_numbers
+    FROM calls c ${where}
+  `).get(...p);
+
+  const byDisposition = db.prepare(`
+    SELECT COALESCE(disposition, 'untagged') AS disposition, COUNT(*) AS count
+    FROM calls c ${where}
+    GROUP BY disposition ORDER BY count DESC
+  `).all(...p);
+
+  const byHour = db.prepare(`
+    SELECT CAST(strftime('%H', started_at) AS INTEGER) AS hour, COUNT(*) AS count
+    FROM calls c ${where}
+    GROUP BY hour ORDER BY hour
+  `).all(...p);
+
+  const byDay = db.prepare(`
+    SELECT date(started_at) AS day, COUNT(*) AS count,
+           SUM(CASE WHEN status='completed' THEN 1 ELSE 0 END) AS connected
+    FROM calls c ${where}
+    GROUP BY day ORDER BY day
+  `).all(...p);
+
+  res.json({ totals, byDisposition, byHour, byDay, fromDt, toDt });
 });
 
 // POST Twilio status callback — Twilio will hit this endpoint

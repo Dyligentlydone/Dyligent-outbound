@@ -26,6 +26,10 @@ export const getCalls = (params) =>
 export const patchCall = (id, data) =>
   api.patch(`/api/calls/${id}`, data).then((r) => r.data);
 
+// --- Stats ---
+export const getStats = (params) =>
+  api.get('/api/calls/stats', { params }).then((r) => r.data);
+
 // --- Token ---
 export const getToken = () =>
   api.get('/voice/token').then((r) => r.data.token);

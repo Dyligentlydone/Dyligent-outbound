@@ -45,4 +45,12 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_calls_contact_id ON calls(contact_id);
 `);
 
+// Safe migrations — add new columns without breaking existing data
+const migrations = [
+  `ALTER TABLE calls ADD COLUMN disposition TEXT`,
+];
+for (const sql of migrations) {
+  try { db.exec(sql); } catch (_) { /* column already exists */ }
+}
+
 module.exports = db;

@@ -341,6 +341,80 @@ input:focus, textarea:focus { border-color: #4f7eff; }
 }
 .accept-btn:hover { background: #25a050; }
 
+/* ── Dispositions ─────────────────────────────────── */
+.dispositions-panel { display: flex; flex-direction: column; gap: 12px; }
+
+.disp-filter-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
+.disp-filter-btn {
+  font-size: 11px; font-weight: 600; padding: 3px 12px; border-radius: 20px;
+  border: 1px solid #c8d8f0; color: #6070a0; background: transparent;
+  transition: all .15s; cursor: pointer;
+}
+.disp-filter-btn:hover { border-color: #7090c0; color: #2a3a70; }
+.disp-filter-btn.active { border-color: currentColor; background: rgba(42,92,214,0.08); color: #2a5cd6; }
+
+/* Disposition picker on call rows */
+.disp-wrap { position: relative; display: inline-flex; align-items: center; flex-shrink: 0; }
+.disp-current {
+  font-size: 11px; color: #a0aac8; background: none; padding: 0;
+  text-decoration: underline; white-space: nowrap;
+}
+.disp-current:hover { color: #3a4870; }
+.disp-menu {
+  position: absolute; top: 100%; left: 0; z-index: 100;
+  background: #fff; border: 1px solid #c8d8f0; border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12); padding: 4px;
+  display: flex; flex-direction: column; min-width: 140px;
+}
+.disp-opt {
+  font-size: 12px; text-align: left; padding: 5px 10px; border-radius: 5px;
+  background: none; white-space: nowrap;
+}
+.disp-opt:hover { background: #f0f4fc; }
+.disp-opt.active { font-weight: 700; }
+.disp-clear { color: #aaa !important; margin-top: 2px; border-top: 1px solid #eee; }
+
+.disp-badge { font-size: 11px; font-weight: 600; flex-shrink: 0; }
+
+.disp-retag-row { display: flex; gap: 2px; flex-shrink: 0; }
+.disp-retag-btn {
+  font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 3px;
+  background: rgba(0,0,0,0.04); border: 1px solid transparent;
+  cursor: pointer;
+}
+.disp-retag-btn:hover { background: rgba(0,0,0,0.1); }
+.disp-retag-btn.active { border-color: currentColor; background: rgba(0,0,0,0.08); }
+
+/* ── Stats ────────────────────────────────────────── */
+.stats-panel { display: flex; flex-direction: column; gap: 16px; }
+
+.stats-period-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.custom-range { display: flex; align-items: center; gap: 6px; margin-left: 8px; font-size: 12px; color: #5a6480; }
+.custom-range input { width: 130px; padding: 4px 8px; font-size: 12px; background: rgba(255,255,255,0.7); color: #1a1f2e; border-color: #b8cfe8; }
+
+.stat-cards { display: flex; flex-wrap: wrap; gap: 10px; }
+.stat-card {
+  background: rgba(255,255,255,0.72); border: 1px solid #c8d8f0; border-radius: 8px;
+  padding: 10px 16px; min-width: 100px; text-align: center;
+}
+.stat-value { font-size: 24px; font-weight: 700; color: #1a2040; line-height: 1; }
+.stat-label { font-size: 11px; color: #6070a0; margin-top: 3px; text-transform: uppercase; letter-spacing: .04em; }
+.stat-sub   { font-size: 10px; color: #8a9ab8; margin-top: 2px; }
+
+.stats-section { display: flex; flex-direction: column; gap: 6px; }
+.stats-section-title { font-size: 11px; font-weight: 700; color: #8090b8; text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid #b8cfe8; padding-bottom: 4px; }
+
+.stats-bar-row { display: flex; align-items: center; gap: 8px; min-height: 24px; }
+.stats-bar-label { font-size: 12px; min-width: 120px; flex-shrink: 0; }
+.stats-bar-track { flex: 1; height: 6px; background: #e8eef8; border-radius: 3px; overflow: hidden; }
+.stats-bar-fill  { height: 100%; border-radius: 3px; transition: width .3s; min-width: 2px; }
+.stats-bar-count { font-size: 11px; color: #6070a0; min-width: 80px; text-align: right; flex-shrink: 0; }
+
+.stats-hour-grid { display: flex; align-items: flex-end; gap: 2px; height: 56px; padding-bottom: 16px; position: relative; }
+.stats-hour-col  { display: flex; flex-direction: column; align-items: center; flex: 1; }
+.stats-hour-bar  { width: 100%; background: #2a5cd6; border-radius: 2px 2px 0 0; min-height: 2px; transition: height .3s; }
+.stats-hour-label { font-size: 9px; color: #8090b8; margin-top: 2px; }
+
 /* ── Misc ─────────────────────────────────────────── */
 .empty-state { color: #8a9ab8; text-align: center; padding: 40px; font-size: 14px; }
 

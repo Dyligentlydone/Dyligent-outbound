@@ -3,6 +3,8 @@ import Dialer from './components/Dialer';
 import IncomingCall from './components/IncomingCall';
 import CallHistory from './components/CallHistory';
 import Contacts from './components/Contacts';
+import Dispositions from './components/Dispositions';
+import Stats from './components/Stats';
 import { useTwilioDevice } from './hooks/useTwilioDevice';
 import { getContacts, getCalls } from './lib/api';
 import './App.css';
@@ -87,7 +89,7 @@ export default function App() {
         {/* Right: nav + content on the paper */}
         <main className="main-panel">
           <nav className="paper-nav">
-            {['Contacts', 'History'].map((t) => (
+            {['Contacts', 'History', 'Dispositions', 'Stats'].map((t) => (
               <button
                 key={t}
                 className={`paper-nav-btn ${tab === t ? 'active' : ''}`}
@@ -102,19 +104,15 @@ export default function App() {
           </nav>
           <div className="tab-content">
             {tab === 'Contacts' && (
-              <Contacts
-                contacts={contacts}
-                onRefresh={loadContacts}
-                onCallNumber={handleCallFromContacts}
-              />
+              <Contacts contacts={contacts} onRefresh={loadContacts} onCallNumber={handleCallFromContacts} />
             )}
             {tab === 'History' && (
-              <CallHistory
-                calls={calls}
-                onRefresh={loadCalls}
-                onCallNumber={handleCallFromHistory}
-              />
+              <CallHistory calls={calls} onRefresh={loadCalls} onCallNumber={handleCallFromHistory} />
             )}
+            {tab === 'Dispositions' && (
+              <Dispositions onCallNumber={handleCallFromHistory} />
+            )}
+            {tab === 'Stats' && <Stats />}
           </div>
         </main>
       </div>
